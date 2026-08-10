@@ -3,7 +3,7 @@
 **Laboratorio de Programación en Python y R — Maestría en Econometría (UTDT)**
 Docente: Ian Evangelos Bounos — 2026
 
-## Qué contiene este trabajo
+## ¿Qué contiene este trabajo?
 
 El notebook `TP_python_integrador.ipynb` resuelve las tres partes del trabajo práctico integrador:
 
@@ -26,8 +26,6 @@ notebook fija una semilla (`SEED = 42`) al inicio para que todos los resultados 
 reproducibles.
 
 ## Cómo ejecutarlo
-
-**Opción A — Google Colab (recomendado):**
 1. Entrá a [Google Colab](https://colab.research.google.com/).
 2. `Archivo → Abrir notebook → GitHub`, pegá la URL de este repositorio y seleccioná
    `TP_python_integrador.ipynb`.
