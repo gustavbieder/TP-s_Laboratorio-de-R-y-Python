@@ -1,7 +1,6 @@
 # TP's_Laboratorio-de-R-y-Python
 # TP Integrador — Módulo Python
 **Laboratorio de Programación en Python y R — Maestría en Econometría (UTDT)**
-Docente: Ian Evangelos Bounos — 2026
 
 ## ¿Qué contiene este trabajo?
 
