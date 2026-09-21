@@ -1,35 +1,84 @@
-# TP's_Laboratorio-de-R-y-Python
-# TP Integrador — Módulo Python
-**Laboratorio de Programación en Python y R — Maestría en Econometría (UTDT)**
+# TP Integrador – Módulo R: traspaso del tipo de cambio al IPC de bienes importados (ARIMAX)
 
-## ¿Qué contiene este trabajo?
+Trabajo práctico integrador del Laboratorio de Programación en Python y R
+(Maestría en Econometría, Universidad Torcuato Di Tella, 2026).
 
-El notebook `TP_python_integrador.ipynb` resuelve las tres partes del trabajo práctico integrador:
+**Alumno:** Gustavo Santiago Biedermann Giménez
 
-- **Parte 1 — Robustez ante contaminación de muestras.** Simulaciones Monte Carlo (M=1000
-  y M=500) que comparan sesgo y ECM empírico de la media vs. la mediana, y de MCO
-  (implementado a mano con la fórmula matricial, sin `statsmodels`/`sklearn`) vs. LAD
-  (`scipy.optimize.minimize`), bajo distintos niveles de contaminación con outliers.
-- **Parte 2 — Paradoja de Simpson y sesgo por variable omitida.** Un proceso generador
-  de datos diseñado para que la regresión marginal `Y~X` dé un coeficiente nulo, `Y~X+Z`
-  dé negativo y `Y~X+W` dé positivo, con evidencia (M=1000 simulaciones y un ejercicio de
-  n creciente hasta 100.000) de que el sesgo por variable omitida no desaparece con
-  muestras grandes, y una ilustración visual de la paradoja.
-- **Parte 3 — Análisis empírico con Gapminder.** Estudio de Paraguay: convergencia en
-  esperanza de vida respecto al promedio mundial (1952-2007) y un episodio atípico de
-  crecimiento del PBI per cápita respecto al promedio del continente, vinculado a la
-  construcción de la represa de Itaipú (1972-1982).
+## Pregunta
 
-Cada parte incluye al menos una celda de markdown con interpretación económica, y el
-notebook fija una semilla (`SEED = 42`) al inicio para que todos los resultados sean
-reproducibles.
+¿Cuánto de una depreciación del guaraní frente al dólar se traslada al IPC de bienes importados (IPC_imp) y
+ese vínculo mejora el pronóstico de su variación mensual a un mes?
 
-## Cómo ejecutarlo
-1. Entrá a [Google Colab](https://colab.research.google.com/).
-2. `Archivo → Abrir notebook → GitHub`, pegá la URL de este repositorio y seleccioná
-   `TP_python_integrador.ipynb`.
-3. `Entorno de ejecución → Ejecutar todas`. El notebook corre de punta a punta sin
-   modificaciones ni archivos externos: los datos se generan por simulación y el
-   dataset de Gapminder viene incluido en la librería `plotly`.
+## Dataset
 
+- **Fuente:** Banco Central del Paraguay (bcp.gov.py). Fecha de descarga: *(completar)*.
+- **Archivo:** `data/raw/Base_Arimax.xlsx` (hoja `Hoja1`).
+- **Variables usadas:** `IPC_imp` (IPC de bienes importados, base diciembre 2017 = 100) y `TCN` (tipo de cambio
+  nominal, guaraníes por dólar). Frecuencia mensual, enero 2004 a agosto 2026 (272 observaciones). El archivo trae
+  también el IPC general (`IPC`), que este trabajo no utiliza.
+- **Transformación:** logaritmo natural y primera diferencia → `dln_ipc_imp` (`d_ipc_imp`) y `dln_tcn` (`d_tcn`),
+  variaciones mensuales aproximadas (0,01 ≈ 1 %).
+- **Ventana de análisis:** enero 2012 a agosto 2026 (176 meses), primer año completo con el esquema de metas de
+  inflación (vigente desde mayo de 2011). La muestra completa se usa como prueba de robustez.
 
+## Técnica
+
+**ARIMAX** (regresión con errores ARMA) de `d_ipc_imp` sobre `d_tcn` y sus rezagos. Se busca el mejor modelo con una
+grilla de 756 especificaciones (órdenes ARMA, estacionalidad, rezagos del tipo de cambio), filtros de residuos y de
+raíces, y validación temporal; luego se evalúa fuera de muestra (2023-01 a 2026-08) con Diebold-Mariano
+(pérdida cuadrática y absoluta) y se analizan el traspaso acumulado, su estabilidad y su robustez.
+
+## Estructura del repositorio
+
+```
+├── run_all.R                    # corre todo el proyecto de punta a punta
+├── TP_Integrador_R.Rproj        # proyecto de RStudio (fija el directorio de trabajo)
+├── R/
+│   ├── 00_config.R              # paquetes, semilla, rutas, parámetros, tema gráfico
+│   ├── utils_modelos.R          # funciones para especificar, ajustar y evaluar ARIMAX
+│   ├── 01_import_transform.R    # importa el Excel, verifica calidad, log y primera diferencia
+│   ├── 02_eda.R                 # Parte 2: análisis exploratorio (ggplot2)
+│   ├── 03_seleccion_arimax.R    # Parte 3 (1/2): grilla, filtros y validación temporal
+│   └── 04_evaluacion_resultados.R  # Parte 3 (2/2): fuera de muestra, diagnósticos, traspaso, robustez
+├── data/
+│   ├── raw/Base_Arimax.xlsx
+│   ├── processed/base_transformada.csv
+│   └── processed/Base_transformada_IPC_imp_TCN.xlsx   # misma base transformada, en Excel con fórmulas
+├── output/
+│   ├── figures/                 # gráficos (PNG)
+│   └── tables/                  # tablas de resultados (CSV)
+└── report/
+    └── informe_TP_R.pdf         # informe en PDF (sin código)
+```
+
+## Cómo correr el proyecto
+
+Requisitos: R ≥ 4.1 y conexión a internet la primera vez (los paquetes que falten se instalan solos):
+`tidyverse`, `readxl`, `lubridate`, `forecast`, `tseries`, `lmtest`, `strucchange`, `patchwork`,
+`scales`, `zoo`.
+
+1. Abrir `TP_Integrador_R.Rproj` en RStudio (o ubicar el directorio de trabajo en la raíz del repositorio).
+2. Ejecutar:
+
+```r
+source("run_all.R")
+```
+
+o, desde la terminal, en la raíz del repositorio: `Rscript run_all.R`.
+
+Tiempo aproximado: 5 a 10 minutos (la mayor parte es la búsqueda en grilla y la validación temporal).
+Todas las rutas son relativas y la semilla se fija en `R/00_config.R` (`set.seed(2026)`); el
+procedimiento es determinístico. Los scripts también se pueden correr uno por uno, en orden numérico.
+
+## Resultados principales
+
+- **Traspaso parcial y rápido.** Una depreciación de 1 % eleva el IPC_imp cerca de 0,12 % en el mismo mes y 0,18 %
+  acumulado al mes siguiente (IC 95 %: 0,11 a 0,26). El efecto se agota en dos meses. Es robusto a la muestra
+  (0,13 a 0,23) y no hay evidencia de cambio desde 2020.
+- **Pronóstico a un mes, 2023-2026.** Usar el tipo de cambio del mes reduce el error absoluto medio unos 14 % frente a
+  la media histórica (significativo) y el RMSE unos 6 % (no significativo). Con solo tipos de cambio pasados, la
+  mejora es marginal.
+- **Limitaciones.** Residuos con colas pesadas y heterocedasticidad, asociación no causal y muestra de evaluación corta.
+
+Detalle, gráficos, decisiones y limitaciones: `report/informe_TP_R.pdf`.
